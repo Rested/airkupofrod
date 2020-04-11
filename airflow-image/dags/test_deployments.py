@@ -15,11 +15,11 @@ default_args = {
     "email": ["airflow@airflow.com"],
     "email_on_failure": False,
     "email_on_retry": False,
-    "retries": 1,
+    "retries": 0,
     "retry_delay": timedelta(minutes=5),
 }
 
-dag = DAG("test_deployments", default_args=default_args, schedule_interval=timedelta(1))
+dag = DAG("test_deployments", default_args=default_args, catchup=False, schedule_interval=timedelta(1))
 
 # t1, t2 and t3 are examples of tasks created by instantiating operators
 t1 = DummyOperator(dag=dag, task_id="dummy")

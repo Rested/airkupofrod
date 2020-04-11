@@ -1,0 +1,21 @@
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: list-deployments
+  labels:
+    app: airflow
+rules:
+  - apiGroups: [""]
+    resources:
+      - deployments
+    verbs:
+      - list
+      - get
+  - apiGroups:
+    - extensions
+    - apps
+    resources:
+      - deployments
+    verbs:
+      - list
+      - get

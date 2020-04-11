@@ -2,15 +2,32 @@ airflow:
   config:
     AIRFLOW__KUBERNETES__DAGS_IN_IMAGE: True
     AIRFLOW__WEBSERVER__AUTHENTICATE: False
-  initialStartupDelay: 5
+
 web:
+  initialStartupDelay: 5
   service:
     type: NodePort
+  readinessProbe:
+    successThreshold: 1
+    timeoutSeconds: 2
+    periodSeconds: 1
+    failureThreshold: 100
+  livelinessProbe:
+    successThreshold: 1
+    timeoutSeconds: 2
+    periodSeconds: 1
+    failureThreshold: 100
 ingress:
-  enabled: false
+  enabled: true
+  web:
+    path: ""
 
 flower:
   enabled: false
 
 workers:
-  enabled: false
+  enabled: true
+  initialStartupDelay: 5
+
+rbac:
+  create: true

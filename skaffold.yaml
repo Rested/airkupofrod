@@ -6,6 +6,7 @@ build:
       context: airflow-image
 
 deploy:
+  statusCheckDeadlineSeconds: 600 # 10 mins
   helm:
     flags:
       upgrade: ["-i", "--force=false"]
@@ -23,3 +24,10 @@ deploy:
   kubectl:
     manifests:
       - example-deployment-manifests/*.yaml
+      - role-binding/*.yaml
+portForward:
+  - resourceName: airflow-web
+    resourceType: Service
+    port: 8080
+    localPort: 8080
+    namespace: default
