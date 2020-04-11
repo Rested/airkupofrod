@@ -9,7 +9,7 @@ setuptools.setup(
     author="Reuben Thomas-Davis",
     author_email="reuben@rekon.uk",
     description="Takes a deployment in your kubernetes cluster and turns its pod template into a KubernetesPodOperator "
-    "object.",
+                "object.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/rekon-oss/airkupofrod",
@@ -20,4 +20,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
+    install_requires=[
+        'apache-airflow[kubernetes]>=1.10',
+    ],
 )
