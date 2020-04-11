@@ -12,15 +12,14 @@ deploy:
       upgrade: ["-i", "--force=false"]
     releases:
     - name: airflow
-      chartPath: helm-charts/stable/airflow
+      chartPath: stable/airflow
+      remote: true
       values:
         airflow.image: airflow-image
       valuesFiles: ["helm-charts/stable/airflow/values.yaml", "airflow-image/values.yaml"]
       imageStrategy:
         helm:
           explicitRegistry: false
-#      wait: true
-      recreatePods: true
   kubectl:
     manifests:
       - example-deployment-manifests/*.yaml
