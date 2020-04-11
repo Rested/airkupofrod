@@ -5,8 +5,16 @@ from airflow.utils.decorators import apply_defaults
 from kubernetes.client import V1PodSpec, V1Container, V1ObjectMeta
 
 from airkupofrod.collect import get_pod_template_from_deployment_labels_and_namespace
-from airkupofrod.conversions import handle_container_environment_variables, convert_ports, convert_volume_mounts, \
-    convert_volumes, convert_affinity, convert_resources, convert_tolerations, convert_security_context
+from airkupofrod.conversions import (
+    handle_container_environment_variables,
+    convert_ports,
+    convert_volume_mounts,
+    convert_volumes,
+    convert_affinity,
+    convert_resources,
+    convert_tolerations,
+    convert_security_context,
+)
 
 
 class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):

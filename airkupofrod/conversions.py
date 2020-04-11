@@ -110,5 +110,3 @@ def convert_resources(container: V1Container) -> Resources:
 def convert_tolerations(pod_spec: V1PodSpec) -> List[Dict]:
     tolerations: List[V1Toleration] = pod_spec.tolerations
     return [toleration.to_dict() for toleration in tolerations]
-
-

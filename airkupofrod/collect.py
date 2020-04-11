@@ -12,8 +12,6 @@ from kubernetes.client import (
 
 from airkupofrod.exception import AirKuPOFroDError
 
-config.load_kube_config()
-
 
 def _validate_pod_template_spec(pod_template: V1PodTemplateSpec):
     pod_spec: V1PodSpec = pod_template.spec
@@ -25,7 +23,7 @@ def _validate_pod_template_spec(pod_template: V1PodTemplateSpec):
         )
 
 
-def _get_pod_template_from_deployment(deployment: V1Deployment, ) -> V1PodTemplateSpec:
+def _get_pod_template_from_deployment(deployment: V1Deployment,) -> V1PodTemplateSpec:
     spec: V1DeploymentSpec = deployment.spec
     pod_template: V1PodTemplateSpec = spec.template
     _validate_pod_template_spec(pod_template)
@@ -33,12 +31,12 @@ def _get_pod_template_from_deployment(deployment: V1Deployment, ) -> V1PodTempla
 
 
 def get_pod_template_from_deployment_labels_and_namespace(
-        namespace: str,
-        config_file: Optional[str] = None,
-        cluster_context: Optional[str] = None,
-        in_cluster: Optional[bool] = None,
-        labels: Optional[Dict[str, str]] = None,
-        fields: Optional[Dict[str, str]] = None,
+    namespace: str,
+    config_file: Optional[str] = None,
+    cluster_context: Optional[str] = None,
+    in_cluster: Optional[bool] = None,
+    labels: Optional[Dict[str, str]] = None,
+    fields: Optional[Dict[str, str]] = None,
 ) -> Tuple[V1PodTemplateSpec, V1Deployment]:
     if not (fields or labels):
         raise AirKuPOFroDError(

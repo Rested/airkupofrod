@@ -1,0 +1,20 @@
+apiVersion: skaffold/v1beta15
+kind: Config
+build:
+  artifacts:
+    - image: airflow-image
+      context: airflow-image
+
+deploy:
+  helm:
+    flags:
+      upgrade: ["-i", "--force=false"]
+    releases:
+    - name: airflow
+      chartPath: helm-charts/stable/airflow
+      values:
+        airflow.image: airflow-image
+      valuesFiles: ["helm-charts/stable/airflow/values.yaml", "airflow-image/values.yaml"]
+      imageStrategy:
+        helm:
+          explicitRegistry: false

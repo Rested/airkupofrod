@@ -1,0 +1,16 @@
+airflow:
+  config:
+    AIRFLOW__KUBERNETES__DAGS_IN_IMAGE: True
+    AIRFLOW__WEBSERVER__AUTHENTICATE: False
+
+web:
+  service:
+    type: NodePort
+ingress:
+  enabled: false
+
+flower:
+  enabled: false
+
+workers:
+  enabled: false
