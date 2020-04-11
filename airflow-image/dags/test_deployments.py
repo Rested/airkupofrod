@@ -24,8 +24,9 @@ dag = DAG("test_deployments", default_args=default_args, schedule_interval=timed
 # t1, t2 and t3 are examples of tasks created by instantiating operators
 t1 = DummyOperator(dag=dag, task_id="dummy")
 
-no_deployment = KubernetesPodOperatorFromDeployment(task_id="no_deployment", dag=dag, image="busybox",
-                                                    cmds=["echo", "'hello world'"], in_cluster=True)
+no_deployment = KubernetesPodOperatorFromDeployment(task_id="minimal", dag=dag, image="busybox",
+                                                    cmds=["echo", "'hello world'"], in_cluster=True, namespace="default",
+                                                    deployment_labels={"app": "minimal"})
 
 t1 >> [
     no_deployment

@@ -18,3 +18,8 @@ deploy:
       imageStrategy:
         helm:
           explicitRegistry: false
+#      wait: true
+      recreatePods: true
+  kubectl:
+    manifests:
+      - example-deployment-manifests/*.yaml

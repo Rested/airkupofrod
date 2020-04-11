@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minimal-deployment-template
+  namespace: default
+  labels:
+    app: minimal
+spec:
+  selector:
+    matchLabels:
+      app: minimal
+  replicas: 0
+  template:
+    metadata:
+      labels:
+        app: minimal
+    spec:
+      containers:
+      - name: hello
+        image: busybox
+        imagePullPolicy: Always

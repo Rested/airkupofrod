@@ -2,7 +2,7 @@ airflow:
   config:
     AIRFLOW__KUBERNETES__DAGS_IN_IMAGE: True
     AIRFLOW__WEBSERVER__AUTHENTICATE: False
-
+  initialStartupDelay: 5
 web:
   service:
     type: NodePort

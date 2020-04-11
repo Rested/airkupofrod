@@ -159,16 +159,55 @@ class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
         super(KubernetesPodOperator, self).__init__(*args, resources=None, **kwargs)
         self.do_xcom_push = do_xcom_push
 
+
+        self.image = image
+        self.namespace = namespace
+        self.cmds = cmds
+        self.arguments = arguments
+        self.labels = labels
+        self.startup_timeout_seconds = startup_timeout_seconds
+        self.name = self._set_name(name or kwargs["task_id"])
+
+        self.env_vars = env_vars
+        self.ports = ports
+        self.volume_mounts = volume_mounts
+        self.volumes = volumes
+        self.secrets = secrets
+        self.in_cluster = in_cluster
+        self.cluster_context = cluster_context
+        self.get_logs = get_logs
+        self.image_pull_policy = image_pull_policy
+        self.node_selectors = node_selectors
+        self.annotations = annotations
+        self.affinity = affinity
+        self.resources = self._set_resources(resources)
+        self.config_file = config_file
+        self.image_pull_secrets = image_pull_secrets
+        self.service_account_name = service_account_name
+        self.is_delete_operator_pod = is_delete_operator_pod
+        self.hostnetwork = hostnetwork
+        self.tolerations = tolerations
+        self.configmaps = configmaps
+        self.security_context = security_context
+        self.pod_runtime_info_envs = pod_runtime_info_envs
+        self.dnspolicy = dnspolicy
+
+        self.deployment_namespace = deployment_namespace
+        self.deployment_fields = deployment_fields
+        self.deployment_labels = deployment_labels
+
+    def execute(self, context):
+
         (
             pod_template,
             deployment,
         ) = get_pod_template_from_deployment_labels_and_namespace(
-            namespace=deployment_namespace or namespace,
-            config_file=config_file,
-            cluster_context=cluster_context,
-            in_cluster=in_cluster,
-            fields=deployment_fields,
-            labels=deployment_labels,
+            namespace=self.deployment_namespace or self.namespace,
+            config_file=self.config_file,
+            cluster_context=self.cluster_context,
+            in_cluster=self.in_cluster,
+            fields=self.deployment_fields,
+            labels=self.deployment_labels,
         )
         pod_spec: V1PodSpec = pod_template.spec
         container: V1Container = pod_spec.containers[0]
@@ -181,40 +220,34 @@ class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
             runtime_info_envs,
         ) = handle_container_environment_variables(container.env)
 
-        self.image = image or container.image
-        self.namespace = namespace
-        self.cmds = cmds or container.command
-        self.arguments = arguments or container.args
-        self.labels = labels or metadata.labels
-        self.startup_timeout_seconds = startup_timeout_seconds
-        self.name = self._set_name(name or deployment.metadata.name)
-
-        self.env_vars = env_vars or plain_env_vars
-        self.ports = ports or convert_ports(container)
-        self.volume_mounts = volume_mounts or convert_volume_mounts(container)
-        self.volumes = volumes or convert_volumes(pod_spec)
-        self.secrets = secrets or secrets
-        self.in_cluster = in_cluster
-        self.cluster_context = cluster_context
-        self.get_logs = get_logs
+        self.image = self.image or container.image
+        self.cmds = self.cmds or container.command
+        self.arguments = self.arguments or container.args
+        self.labels = self.labels or metadata.labels
+        self.name = self._set_name(self.name or deployment.metadata.name)
+        self.env_vars = self.env_vars or plain_env_vars
+        self.ports = self.ports or convert_ports(container)
+        self.volume_mounts = self.volume_mounts or convert_volume_mounts(container)
+        self.volumes = self.volumes or convert_volumes(pod_spec)
+        self.secrets = self.secrets or container_secrets
         self.image_pull_policy = (
-            image_pull_policy or container.image_pull_policy or "IfNotPresent"
+                self.image_pull_policy or container.image_pull_policy or "IfNotPresent"
         )
-        self.node_selectors = node_selectors or pod_spec.node_selector
-        self.annotations = annotations or metadata.annotations
-        self.affinity = affinity or convert_affinity(pod_spec)
-        self.resources = self._set_resources(resources or convert_resources(container))
-        self.config_file = config_file
-        self.image_pull_secrets = image_pull_secrets or pod_spec.image_pull_secrets
+        self.node_selectors = self.node_selectors or pod_spec.node_selector
+        self.annotations = self.annotations or metadata.annotations
+        self.affinity = self.affinity or convert_affinity(pod_spec)
+        self.resources = self._set_resources(self.resources or convert_resources(container))
+        self.image_pull_secrets = self.image_pull_secrets  or pod_spec.image_pull_secrets
         self.service_account_name = (
-            service_account_name or pod_spec.service_account_name
+            self.service_account_name or pod_spec.service_account_name
         )
-        self.is_delete_operator_pod = is_delete_operator_pod
         self.hostnetwork = (
-            pod_spec.host_network or False if hostnetwork is None else hostnetwork
+            pod_spec.host_network or False if self.hostnetwork is None else self.hostnetwork
         )
-        self.tolerations = tolerations or convert_tolerations(pod_spec)
-        self.configmaps = configmaps or container_config_maps
-        self.security_context = security_context or convert_security_context(pod_spec)
-        self.pod_runtime_info_envs = pod_runtime_info_envs or runtime_info_envs
-        self.dnspolicy = dnspolicy or pod_spec.dns_policy
+
+        self.tolerations = self.tolerations or convert_tolerations(pod_spec)
+        self.configmaps = self.configmaps or container_config_maps
+        self.security_context = self.security_context or convert_security_context(pod_spec)
+        self.pod_runtime_info_envs = self.pod_runtime_info_envs or runtime_info_envs
+        self.dnspolicy = self.dnspolicy or pod_spec.dns_policy
+        super().execute(context)
