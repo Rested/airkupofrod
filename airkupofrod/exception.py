@@ -1,0 +1,2 @@
+class AirKuPOFroDError(Exception):
+    pass
