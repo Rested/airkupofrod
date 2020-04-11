@@ -159,7 +159,6 @@ class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
         super(KubernetesPodOperator, self).__init__(*args, resources=None, **kwargs)
         self.do_xcom_push = do_xcom_push
 
-
         self.image = image
         self.namespace = namespace
         self.cmds = cmds
@@ -231,23 +230,29 @@ class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
         self.volumes = self.volumes or convert_volumes(pod_spec)
         self.secrets = self.secrets or container_secrets
         self.image_pull_policy = (
-                self.image_pull_policy or container.image_pull_policy or "IfNotPresent"
+            self.image_pull_policy or container.image_pull_policy or "IfNotPresent"
         )
         self.node_selectors = self.node_selectors or pod_spec.node_selector
         self.annotations = self.annotations or metadata.annotations
         self.affinity = self.affinity or convert_affinity(pod_spec)
-        self.resources = self._set_resources(self.resources or convert_resources(container))
-        self.image_pull_secrets = self.image_pull_secrets  or pod_spec.image_pull_secrets
+        self.resources = self._set_resources(
+            self.resources or convert_resources(container)
+        )
+        self.image_pull_secrets = self.image_pull_secrets or pod_spec.image_pull_secrets
         self.service_account_name = (
             self.service_account_name or pod_spec.service_account_name
         )
         self.hostnetwork = (
-            pod_spec.host_network or False if self.hostnetwork is None else self.hostnetwork
+            pod_spec.host_network or False
+            if self.hostnetwork is None
+            else self.hostnetwork
         )
 
         self.tolerations = self.tolerations or convert_tolerations(pod_spec)
         self.configmaps = self.configmaps or container_config_maps
-        self.security_context = self.security_context or convert_security_context(pod_spec)
+        self.security_context = self.security_context or convert_security_context(
+            pod_spec
+        )
         self.pod_runtime_info_envs = self.pod_runtime_info_envs or runtime_info_envs
         self.dnspolicy = self.dnspolicy or pod_spec.dns_policy
         super().execute(context)

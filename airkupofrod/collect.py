@@ -30,6 +30,10 @@ def _get_pod_template_from_deployment(deployment: V1Deployment,) -> V1PodTemplat
     return pod_template
 
 
+def dict_to_selector(selector_dict: Dict[str, str]) -> str:
+    return ",".join([f"{k}={v}" for k, v in selector_dict.items()])
+
+
 def get_pod_template_from_deployment_labels_and_namespace(
     namespace: str,
     config_file: Optional[str] = None,
@@ -49,7 +53,9 @@ def get_pod_template_from_deployment_labels_and_namespace(
     apps_v1 = AppsV1Api()
 
     matching_deployments = apps_v1.list_namespaced_deployment(
-        namespace=namespace, label_selector=labels, field_selector=fields
+        namespace=namespace,
+        label_selector=dict_to_selector(labels),
+        field_selector=dict_to_selector(fields),
     ).items()
 
     if len(matching_deployments) > 1:
