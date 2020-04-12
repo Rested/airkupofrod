@@ -12,8 +12,24 @@ Ensure your airflow image has the python package `airkupofrod` installed
 pip install airkubofrod
 ```
 
+Then in your dags:
+```python
+from airkupofrod.operator import KubernetesPodOperatorFromDeployment
+
+my_kupofrod_task = KubernetesPodOperatorFromDeployment(
+    deployment_labels={"app": "my-app"}, # deployment labels to lookup by
+    deployment_fields={"metadata.name": "my-app-deploy-template"}, # deployment fields to lookup by
+    deployment_namespace="some-ns", # where the deployment lives
+    namespace="default", # where the pod will be deployed
+    task_id="my-kupofrod-task", 
+    dag=dag,
+    in_cluster=True, 
+) 
+```
+
 You will also need to make sure that a service account attached to your airflow pods
-has the a role capable of listing deployments bound to it. See [role-binding](./role-binding) for an example of this.
+has the a role capable of listing deployments bound to it. See 
+[role-binding](https://github.com/rekon-oss/airkupofrod/tree/master/role-binding) for an example of this.
 
 This is in addition to the role bindings necessary for the `KubernetesPodOperator` to work which can be seen in the 
 [airflow helm chart](https://github.com/helm/charts/blob/master/stable/airflow/templates/role.yaml) 
