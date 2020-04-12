@@ -1,4 +1,8 @@
-# Airflow Kubernetes Pod Operator from Deployment
+# Airflow KubernetesPodOperatorFromDeployment
+
+[![PyPI version](https://badge.fury.io/py/airkupofrod.svg)](https://badge.fury.io/py/airkupofrod)
+[![PyPI license](https://img.shields.io/pypi/l/airkupofrod.svg)](https://pypi.python.org/pypi/airkupofrod/)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/airkupofrod.svg)](https://pypi.python.org/pypi/airkupofrod/)
 
 Or `airkupofrod` for short, is a tiny package which does one thing - takes a deployment in your kubernetes cluster and 
 turns its pod template into a `KubernetesPodOperator` object.
