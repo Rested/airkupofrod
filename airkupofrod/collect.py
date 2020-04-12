@@ -8,6 +8,7 @@ from kubernetes.client import (
     V1Container,
     V1Deployment,
     AppsV1Api,
+    V1DeploymentList,
 )
 
 from airkupofrod.exception import AirKuPOFroDError
@@ -54,15 +55,15 @@ def get_pod_template_from_deployment_labels_and_namespace(
 
     matching_deployments = apps_v1.list_namespaced_deployment(
         namespace=namespace,
-        label_selector=dict_to_selector(labels),
-        field_selector=dict_to_selector(fields),
-    ).items()
+        label_selector=dict_to_selector(labels or {}),
+        field_selector=dict_to_selector(fields or {}),
+    ).items
 
     if len(matching_deployments) > 1:
         raise AirKuPOFroDError("Multiple matching deployments found")
 
     try:
-        deployment = next(matching_deployments)
+        deployment = matching_deployments[0]
     except StopIteration:
         raise AirKuPOFroDError("No matching deployment found")
 

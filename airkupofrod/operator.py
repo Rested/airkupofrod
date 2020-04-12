@@ -14,6 +14,7 @@ from airkupofrod.conversions import (
     convert_resources,
     convert_tolerations,
     convert_security_context,
+    convert_image_pull_secrets,
 )
 
 
@@ -136,7 +137,7 @@ class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
         config_file=None,
         node_selectors=None,
         image_pull_secrets=None,
-        service_account_name="default",
+        service_account_name=None,
         is_delete_operator_pod=False,
         hostnetwork=None,
         tolerations=None,
@@ -221,8 +222,8 @@ class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
 
         self.image = self.image or container.image
         self.cmds = self.cmds or container.command
-        self.arguments = self.arguments or container.args
-        self.labels = self.labels or metadata.labels
+        self.arguments = self.arguments or container.args or []
+        self.labels = self.labels or metadata.labels or {}
         self.name = self._set_name(self.name or deployment.metadata.name)
         self.env_vars = self.env_vars or plain_env_vars
         self.ports = self.ports or convert_ports(container)
@@ -232,15 +233,22 @@ class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
         self.image_pull_policy = (
             self.image_pull_policy or container.image_pull_policy or "IfNotPresent"
         )
-        self.node_selectors = self.node_selectors or pod_spec.node_selector
-        self.annotations = self.annotations or metadata.annotations
+        self.node_selectors = self.node_selectors or pod_spec.node_selector or {}
+        self.annotations = self.annotations or metadata.annotations or {}
         self.affinity = self.affinity or convert_affinity(pod_spec)
-        self.resources = self._set_resources(
-            self.resources or convert_resources(container)
+        self.resources = (
+            self.resources
+            if (self.resources.has_limits() or self.resources.has_requests())
+            else convert_resources(container)
         )
-        self.image_pull_secrets = self.image_pull_secrets or pod_spec.image_pull_secrets
+        self.image_pull_secrets = self.image_pull_secrets or convert_image_pull_secrets(
+            pod_spec
+        )
         self.service_account_name = (
-            self.service_account_name or pod_spec.service_account_name
+            self.service_account_name
+            or pod_spec.service_account_name
+            or pod_spec.service_account
+            or "default"
         )
         self.hostnetwork = (
             pod_spec.host_network or False
@@ -255,4 +263,7 @@ class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
         )
         self.pod_runtime_info_envs = self.pod_runtime_info_envs or runtime_info_envs
         self.dnspolicy = self.dnspolicy or pod_spec.dns_policy
+
+        self.log.info("volumes %s", self.volumes)
+
         super().execute(context)

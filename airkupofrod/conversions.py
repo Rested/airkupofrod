@@ -20,6 +20,7 @@ from kubernetes.client import (
     V1ConfigMapKeySelector,
     V1ObjectFieldSelector,
     V1PodSecurityContext,
+    V1LocalObjectReference,
 )
 
 
@@ -30,7 +31,7 @@ def handle_container_environment_variables(
     plain_env_vars = {}
     config_maps = []
     runtime_env_vars = []
-    for env_var in env_vars:
+    for env_var in env_vars or []:
         value_from: V1EnvVarSource = env_var.value_from
         if value_from:
             if value_from.resource_field_ref:
@@ -43,9 +44,12 @@ def handle_container_environment_variables(
                         field_path=field_ref.field_path, name=env_var.name
                     )
                 )
+                continue
+
             if value_from.config_map_key_ref:
                 key_ref: V1ConfigMapKeySelector = value_from.config_map_key_ref
                 config_maps.append(key_ref.name)
+                continue
 
             if value_from.secret_key_ref:
                 key_ref: V1SecretKeySelector = value_from.secret_key_ref
@@ -57,6 +61,7 @@ def handle_container_environment_variables(
                         key=key_ref.key,
                     )
                 )
+                continue
 
         plain_env_vars[env_var.name] = env_var.value
 
@@ -70,7 +75,9 @@ def convert_security_context(pod_spec: V1PodSpec):
 
 def convert_ports(container: V1Container) -> List[Port]:
     ports: List[V1ContainerPort] = container.ports
-    return [Port(name=port.name, container_port=port.container_port) for port in ports]
+    return [
+        Port(name=port.name, container_port=port.container_port) for port in ports or []
+    ]
 
 
 def convert_volume_mounts(container: V1Container) -> List[VolumeMount]:
@@ -82,31 +89,48 @@ def convert_volume_mounts(container: V1Container) -> List[VolumeMount]:
             sub_path=vm.sub_path,
             read_only=vm.read_only,
         )
-        for vm in volume_mounts
+        for vm in volume_mounts or []
     ]
 
 
 def convert_volumes(pod_spec: V1PodSpec) -> List[Volume]:
     volumes: List[V1Volume] = pod_spec.volumes
-    return [Volume(name=volume.name, configs=volume.to_dict()) for volume in volumes]
+    return [
+        Volume(name=volume.name, configs=volume.to_dict()) for volume in volumes or []
+    ]
 
 
 def convert_affinity(pod_spec: V1PodSpec) -> Dict:
     affinity: V1Affinity = pod_spec.affinity
+    if affinity is None:
+        return {}
     return affinity.to_dict()
 
 
 def convert_resources(container: V1Container) -> Resources:
     resources: V1ResourceRequirements = container.resources
+    if not resources:
+        return Resources()
+
+    limits = resources.limits or {}
+    requests = resources.requests or {}
+    gpu_limit = limits.get(
+        "nvidia.com/gpu", limits.get("amd.com/gpu")
+    )
     return Resources(
-        request_memory=resources.requests.get("memory"),
-        request_cpu=resources.requests.get("cpu"),
-        limit_memory=resources.limits.get("memory"),
-        limit_cpu=resources.limits.get("cpu"),
-        limit_gpu=resources.limits.get("gpu"),
+        request_memory=requests.get("memory"),
+        request_cpu=requests.get("cpu"),
+        limit_memory=limits.get("memory"),
+        limit_cpu=limits.get("cpu"),
+        limit_gpu=gpu_limit,
     )
 
 
 def convert_tolerations(pod_spec: V1PodSpec) -> List[Dict]:
     tolerations: List[V1Toleration] = pod_spec.tolerations
-    return [toleration.to_dict() for toleration in tolerations]
+    return [toleration.to_dict() for toleration in tolerations or []]
+
+
+def convert_image_pull_secrets(pod_spec: V1PodSpec) -> str:
+    pull_secrets: List[V1LocalObjectReference] = pod_spec.image_pull_secrets
+    return ",".join([pull_secret.name for pull_secret in pull_secrets or []])

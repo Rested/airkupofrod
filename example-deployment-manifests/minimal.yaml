@@ -18,4 +18,3 @@ spec:
       containers:
       - name: hello
         image: busybox
-        imagePullPolicy: Always

@@ -3,8 +3,10 @@ kind: Config
 build:
   artifacts:
     - image: airflow-image
-      context: airflow-image
-
+      context: .
+      docker:
+        dockerfile: airflow-image/Dockerfile
+        noCache: false
 deploy:
   statusCheckDeadlineSeconds: 600 # 10 mins
   helm:
@@ -16,10 +18,12 @@ deploy:
       remote: true
       values:
         airflow.image: airflow-image
-      valuesFiles: ["helm-charts/stable/airflow/values.yaml", "airflow-image/values.yaml"]
+      valuesFiles: ["airflow-image/values.yaml"]
       imageStrategy:
         helm:
           explicitRegistry: false
+      recreatePods: true
+
   kubectl:
     manifests:
       - example-deployment-manifests/*.yaml

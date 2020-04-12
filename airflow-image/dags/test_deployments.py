@@ -24,10 +24,13 @@ dag = DAG("test_deployments", default_args=default_args, catchup=False, schedule
 # t1, t2 and t3 are examples of tasks created by instantiating operators
 t1 = DummyOperator(dag=dag, task_id="dummy")
 
-no_deployment = KubernetesPodOperatorFromDeployment(task_id="minimal", dag=dag, image="busybox",
-                                                    cmds=["echo", "'hello world'"], in_cluster=True, namespace="default",
-                                                    deployment_labels={"app": "minimal"})
+minimal = KubernetesPodOperatorFromDeployment(task_id="minimal", dag=dag, in_cluster=True, namespace="default",
+                                              deployment_labels={"app": "minimal"})
+
+maximal = KubernetesPodOperatorFromDeployment(task_id="maximal", dag=dag, in_cluster=True, namespace="default",
+                                              deployment_fields={"metadata.name": "maximal-deployment-template"})
 
 t1 >> [
-    no_deployment
+    minimal,
+    maximal
 ]

@@ -1,0 +1,152 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: max-secrets
+  namespace: default
+stringData:
+  maximal: from_secret_var
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: max-configmap
+  namespace: default
+data:
+  config: config_var
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: maximal-pvc
+spec:
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 10Mi
+  accessModes:
+    - ReadWriteMany
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: maximal-svc-account
+  namespace: default
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: maximal-pull-secret
+  namespace: default
+stringData:
+  .dockerconfigjson: "{}"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: maximal-deployment-template
+  namespace: default
+  labels:
+    app: maximal
+spec:
+  selector:
+    matchLabels:
+      app: maximal
+  replicas: 0
+  template:
+    metadata:
+      labels:
+        app: maximal
+      annotations:
+        my_ano: blah
+    spec:
+      imagePullSecrets:
+        - name: my-pull-secret
+      containers:
+        - name: hello
+          image: busybox
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - printenv
+          resources:
+            requests:
+              memory: 100Mi
+              cpu: 100m
+            limits:
+              memory: 100Mi
+              cpu: 100m
+          #   nvidia.com/gpu: 100Mi
+          volumeMounts:
+            - name: vol1
+              mountPath: /vol1
+              subPath: stuff
+              readOnly: true
+          env:
+            - name: PLAIN
+              value: plain_var
+            - name: FROM_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: maximal
+                  name: max-secrets
+            - name: FROM_CONF
+              valueFrom:
+                configMapKeyRef:
+                  key: config
+                  name: max-configmap
+            - name: FROM_RUNTIME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - containerPort: 80
+              name: http
+
+      volumes:
+        - name: vol1
+          persistentVolumeClaim:
+            claimName: maximal-pvc
+      serviceAccountName: maximal-svc-account
+      tolerations:
+        - key: "node.kubernetes.io/unreachable"
+          operator: "Exists"
+          effect: "NoSchedule"
+      securityContext:
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      hostNetwork: false
+      nodeSelector:
+        kubernetes.io/os: linux
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+                      - i386
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - kind-control-plane
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - airflow
+              topologyKey: kubernetes.io/arch
+
+
+
