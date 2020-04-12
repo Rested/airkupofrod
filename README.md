@@ -49,7 +49,7 @@ After ensuring you have:
 
 Run:
 ```bash
-skaffold dev --force=false --cleanup=false --status-check=false-port-forward
+skaffold dev --force=false --cleanup=false --status-check=false --port-forward
 ```
 
 Then navigate to http://localhost:8080 and enable and trigger a run of the test deployments dag.
