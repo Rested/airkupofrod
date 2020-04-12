@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 
 from airflow.contrib.kubernetes.pod import Port, Resources
 from airflow.contrib.kubernetes.pod_runtime_info_env import PodRuntimeInfoEnv
@@ -25,7 +25,7 @@ from kubernetes.client import (
 
 
 def handle_container_environment_variables(
-    env_vars: List[V1EnvVar],
+        env_vars: List[V1EnvVar],
 ) -> Tuple[Dict[str, str], List[Secret], List[str], List[PodRuntimeInfoEnv]]:
     secrets = []
     plain_env_vars = {}
@@ -70,7 +70,7 @@ def handle_container_environment_variables(
 
 def convert_security_context(pod_spec: V1PodSpec):
     security_context: V1PodSecurityContext = pod_spec.security_context
-    return security_context.to_dict()
+    return to_swagger_dict(security_context)
 
 
 def convert_ports(container: V1Container) -> List[Port]:
@@ -96,7 +96,7 @@ def convert_volume_mounts(container: V1Container) -> List[VolumeMount]:
 def convert_volumes(pod_spec: V1PodSpec) -> List[Volume]:
     volumes: List[V1Volume] = pod_spec.volumes
     return [
-        Volume(name=volume.name, configs=volume.to_dict()) for volume in volumes or []
+        Volume(name=volume.name, configs=to_swagger_dict(volume)) for volume in volumes or []
     ]
 
 
@@ -104,7 +104,7 @@ def convert_affinity(pod_spec: V1PodSpec) -> Dict:
     affinity: V1Affinity = pod_spec.affinity
     if affinity is None:
         return {}
-    return affinity.to_dict()
+    return to_swagger_dict(affinity)
 
 
 def convert_resources(container: V1Container) -> Resources:
@@ -128,9 +128,35 @@ def convert_resources(container: V1Container) -> Resources:
 
 def convert_tolerations(pod_spec: V1PodSpec) -> List[Dict]:
     tolerations: List[V1Toleration] = pod_spec.tolerations
-    return [toleration.to_dict() for toleration in tolerations or []]
+    return [to_swagger_dict(toleration) for toleration in tolerations or []]
 
 
 def convert_image_pull_secrets(pod_spec: V1PodSpec) -> str:
     pull_secrets: List[V1LocalObjectReference] = pod_spec.image_pull_secrets
     return ",".join([pull_secret.name for pull_secret in pull_secrets or []])
+
+
+def to_swagger_dict(config: Any) -> Any:
+    """Converts a config object to a swagger API dict.
+    This utility method recursively converts swagger code generated configs into
+    a valid swagger dictionary. This method is trying to workaround a bug
+    (https://github.com/swagger-api/swagger-codegen/issues/8948)
+    from swagger generated code
+    Args:
+      config: The config object. It can be one of List, Dict or a Swagger code
+        generated object, which has a `attribute_map` attribute.
+    Returns:
+      The original object with all Swagger generated object replaced with
+      dictionary object.
+    """
+    if isinstance(config, list):
+        return [to_swagger_dict(x) for x in config]
+    if hasattr(config, 'attribute_map'):
+        return {
+            swagger_name: to_swagger_dict(getattr(config, key))
+            for (key, swagger_name) in config.attribute_map.items()
+            if getattr(config, key)
+        }
+    if isinstance(config, dict):
+        return {key: to_swagger_dict(value) for key, value in config.items()}
+    return config

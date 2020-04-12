@@ -2,6 +2,7 @@ airflow:
   config:
     AIRFLOW__KUBERNETES__DAGS_IN_IMAGE: True
     AIRFLOW__WEBSERVER__AUTHENTICATE: False
+    AIRFLOW__CORE__LOGGING_LEVEL: DEBUG
 
 web:
   initialStartupDelay: 5

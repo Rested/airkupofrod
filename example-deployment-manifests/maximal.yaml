@@ -24,7 +24,7 @@ spec:
     requests:
       storage: 10Mi
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
 ---
 apiVersion: v1
 kind: ServiceAccount
