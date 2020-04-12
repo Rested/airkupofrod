@@ -141,7 +141,8 @@ def to_swagger_dict(config: Any) -> Any:
     This utility method recursively converts swagger code generated configs into
     a valid swagger dictionary. This method is trying to workaround a bug
     (https://github.com/swagger-api/swagger-codegen/issues/8948)
-    from swagger generated code
+    from swagger generated code.
+    From https://github.com/tensorflow/tfx/blob/master/tfx/orchestration/launcher/container_common.py
     Args:
       config: The config object. It can be one of List, Dict or a Swagger code
         generated object, which has a `attribute_map` attribute.
