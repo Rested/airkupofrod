@@ -65,11 +65,9 @@ spec:
         - name: hello
           image: busybox
           imagePullPolicy: Always
-          command:
-            - /bin/sh
-            - -c
+          command: [ "sh", "-c"]
           args:
-            - printenv
+            - echo "$PLAIN $FROM_SECRET $FROM_RUNTIME $REFERENCED"
           resources:
             requests:
               memory: 100Mi
@@ -91,15 +89,17 @@ spec:
                 secretKeyRef:
                   key: maximal
                   name: max-secrets
-            - name: FROM_CONF
-              valueFrom:
-                configMapKeyRef:
-                  key: config
-                  name: max-configmap
+#            - name: FROM_CONF
+#              valueFrom:
+#                configMapKeyRef:
+#                  key: config
+#                  name: max-configmap
             - name: FROM_RUNTIME
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: REFERENCED
+              value: REFERENCED_IS_$(FROM_SECRET)
           ports:
             - containerPort: 80
               name: http

@@ -1,7 +1,10 @@
 import warnings
 
+from airflow import AirflowException
+from airflow.contrib.kubernetes import pod_launcher, pod_generator, kube_client
 from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
 from airflow.utils.decorators import apply_defaults
+from airflow.utils.state import State
 from kubernetes.client import V1PodSpec, V1Container, V1ObjectMeta
 
 from airkupofrod.collect import get_pod_template_from_deployment_labels_and_namespace
@@ -16,6 +19,9 @@ from airkupofrod.conversions import (
     convert_security_context,
     convert_image_pull_secrets,
 )
+from airflow.version import version as airflow_version
+
+from airkupofrod.request_factory import extract_env_and_secrets
 
 
 class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
@@ -111,43 +117,43 @@ class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
 
     @apply_defaults
     def __init__(
-        self,  # pylint: disable=too-many-arguments,too-many-locals
-        namespace,
-        deployment_labels=None,
-        deployment_fields=None,
-        deployment_namespace=None,
-        image=None,
-        name=None,
-        cmds=None,
-        arguments=None,
-        ports=None,
-        volume_mounts=None,
-        volumes=None,
-        env_vars=None,
-        secrets=None,
-        in_cluster=None,
-        cluster_context=None,
-        labels=None,
-        startup_timeout_seconds=120,
-        get_logs=True,
-        image_pull_policy=None,
-        annotations=None,
-        resources=None,
-        affinity=None,
-        config_file=None,
-        node_selectors=None,
-        image_pull_secrets=None,
-        service_account_name=None,
-        is_delete_operator_pod=False,
-        hostnetwork=None,
-        tolerations=None,
-        configmaps=None,
-        security_context=None,
-        pod_runtime_info_envs=None,
-        dnspolicy=None,
-        do_xcom_push=False,
-        *args,
-        **kwargs
+            self,  # pylint: disable=too-many-arguments,too-many-locals
+            namespace,
+            deployment_labels=None,
+            deployment_fields=None,
+            deployment_namespace=None,
+            image=None,
+            name=None,
+            cmds=None,
+            arguments=None,
+            ports=None,
+            volume_mounts=None,
+            volumes=None,
+            env_vars=None,
+            secrets=None,
+            in_cluster=None,
+            cluster_context=None,
+            labels=None,
+            startup_timeout_seconds=120,
+            get_logs=True,
+            image_pull_policy=None,
+            annotations=None,
+            resources=None,
+            affinity=None,
+            config_file=None,
+            node_selectors=None,
+            image_pull_secrets=None,
+            service_account_name=None,
+            is_delete_operator_pod=False,
+            hostnetwork=None,
+            tolerations=None,
+            configmaps=None,
+            security_context=None,
+            pod_runtime_info_envs=None,
+            dnspolicy=None,
+            do_xcom_push=False,
+            *args,
+            **kwargs
     ):
         # https://github.com/apache/airflow/blob/2d0eff4ee4fafcf8c7978ac287a8fb968e56605f/UPDATING.md#unification-of-do_xcom_push-flag
         if kwargs.get("xcom_push") is not None:
@@ -231,7 +237,7 @@ class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
         self.volumes = self.volumes or convert_volumes(pod_spec)
         self.secrets = self.secrets or container_secrets
         self.image_pull_policy = (
-            self.image_pull_policy or container.image_pull_policy or "IfNotPresent"
+                self.image_pull_policy or container.image_pull_policy or "IfNotPresent"
         )
         self.node_selectors = self.node_selectors or pod_spec.node_selector or {}
         self.annotations = self.annotations or metadata.annotations or {}
@@ -245,10 +251,10 @@ class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
             pod_spec
         )
         self.service_account_name = (
-            self.service_account_name
-            or pod_spec.service_account_name
-            or pod_spec.service_account
-            or "default"
+                self.service_account_name
+                or pod_spec.service_account_name
+                or pod_spec.service_account
+                or "default"
         )
         self.hostnetwork = (
             pod_spec.host_network or False
@@ -266,4 +272,76 @@ class KubernetesPodOperatorFromDeployment(KubernetesPodOperator):
 
         self.log.info("volumes %s", self.volumes)
 
-        super().execute(context)
+        try:
+            if self.in_cluster is not None:
+                client = kube_client.get_kube_client(in_cluster=self.in_cluster,
+                                                     cluster_context=self.cluster_context,
+                                                     config_file=self.config_file)
+            else:
+                client = kube_client.get_kube_client(cluster_context=self.cluster_context,
+                                                     config_file=self.config_file)
+
+            # Add Airflow Version to the label
+            # And a label to identify that pod is launched by KubernetesPodOperator
+            self.labels.update(
+                {
+                    'airflow_version': airflow_version.replace('+', '-'),
+                    'kubernetes_pod_operator': 'True',
+                }
+            )
+
+            gen = pod_generator.PodGenerator()
+
+            for port in self.ports:
+                gen.add_port(port)
+            for mount in self.volume_mounts:
+                gen.add_mount(mount)
+            for volume in self.volumes:
+                gen.add_volume(volume)
+
+            pod = gen.make_pod(
+                namespace=self.namespace,
+                image=self.image,
+                pod_id=self.name,
+                cmds=self.cmds,
+                arguments=self.arguments,
+                labels=self.labels,
+            )
+
+            pod.service_account_name = self.service_account_name
+            pod.secrets = self.secrets
+            pod.envs = self.env_vars
+            pod.image_pull_policy = self.image_pull_policy
+            pod.image_pull_secrets = self.image_pull_secrets
+            pod.annotations = self.annotations
+            pod.resources = self.resources
+            pod.affinity = self.affinity
+            pod.node_selectors = self.node_selectors
+            pod.hostnetwork = self.hostnetwork
+            pod.tolerations = self.tolerations
+            pod.configmaps = self.configmaps
+            pod.security_context = self.security_context
+            pod.pod_runtime_info_envs = self.pod_runtime_info_envs
+            pod.dnspolicy = self.dnspolicy
+
+            launcher = pod_launcher.PodLauncher(kube_client=client,
+                                                extract_xcom=self.do_xcom_push)
+            # monkey patch to avoid https://github.com/apache/airflow/issues/8275
+            launcher.kube_req_factory.extract_env_and_secrets = extract_env_and_secrets
+            try:
+                (final_state, result) = launcher.run_pod(
+                    pod,
+                    startup_timeout=self.startup_timeout_seconds,
+                    get_logs=self.get_logs)
+            finally:
+                if self.is_delete_operator_pod:
+                    launcher.delete_pod(pod)
+
+            if final_state != State.SUCCESS:
+                raise AirflowException(
+                    'Pod returned a failure: {state}'.format(state=final_state)
+                )
+            if self.do_xcom_push:
+                return result
+        except AirflowException as ex:
+            raise AirflowException('Pod Launching failed: {error}'.format(error=ex))

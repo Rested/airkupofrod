@@ -5,7 +5,10 @@
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/airkupofrod.svg)](https://pypi.python.org/pypi/airkupofrod/)
 
 Or `airkupofrod` for short, is a tiny package which does one thing - takes a deployment in your kubernetes cluster and 
-turns its pod template into a `KubernetesPodOperator` object.
+turns allows you to use its pod template as a `KubernetesPodOperator` object. It does this by providing the 
+`KubernetesPodOperatorFromDeployment` operator.
+
+`airkupofrod` supports 1.10.9<=airflow<2
 
 
 ## Installation and usage
@@ -49,7 +52,7 @@ After ensuring you have:
 
 Run:
 ```bash
-skaffold dev --force=false --cleanup=false --status-check=false-port-forward
+skaffold dev --force=false --cleanup=false --status-check=false --port-forward
 ```
 
 Then navigate to http://localhost:8080 and enable and trigger a run of the test deployments dag.
