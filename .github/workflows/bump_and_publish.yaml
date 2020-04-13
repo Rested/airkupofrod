@@ -11,12 +11,14 @@ jobs:
       with:
         fetch-depth: '0'
     - name: Bump version and push tag
+      id: bumper
       uses: anothrNick/github-tag-action@1.17.2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
-  publish:
     - uses: actions/checkout@master
+      ref: ${{ steps.bumper.outputs.tag }}
+      name: Checkout tag
     - name: Set up Python
       uses: actions/setup-python@v1
       with:
