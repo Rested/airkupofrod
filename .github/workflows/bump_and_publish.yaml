@@ -17,7 +17,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
     - uses: actions/checkout@master
-      ref: ${{ steps.bumper.outputs.tag }}
+      with:
+        ref: ${{ steps.bumper.outputs.tag }}
       name: Checkout tag
     - name: Set up Python
       uses: actions/setup-python@v1
