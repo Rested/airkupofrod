@@ -16,7 +16,7 @@ turns allows you to use its pod template as a `KubernetesPodOperator` object. It
 Ensure your airflow image has the python package `airkupofrod` installed
 
 ```bash
-pip install airkubofrod
+pip install airkupofrod
 ```
 
 Then in your dags:
